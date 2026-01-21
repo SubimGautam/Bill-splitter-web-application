@@ -1,187 +1,244 @@
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { FcGoogle } from 'react-icons/fc';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+const API_BASE_URL = 'http://localhost:5000/api';
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    token: string;
+    user: {
+      id: string;
+      username: string;
+      email: string;
+      role: string;
+    };
+  };
+}
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Redirect if already logged in (client-side check)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        console.log("[Login] Already authenticated → redirecting to dashboard", user.email);
+        window.location.href = "/dashboard";  // hard redirect
+      } catch (e) {
+        console.error("[Login] Invalid stored user data – clearing", e);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
+
+      const text = await response.text();
+      console.log("[Login] Server response:", response.status, text);
+
+      let data: ApiResponse;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Invalid JSON response from server");
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data?.message || `Login failed (${response.status})`);
+      }
+
+      if (!data.data?.token || !data.data?.user) {
+        throw new Error("Missing token or user data in response");
+      }
+
+      // Store auth data
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      console.log("[Login] Stored token & user successfully");
+
+      setSuccess(`Welcome back, ${data.data.user.username || "User"}! Redirecting...`);
+
+      // Longer delay to ensure storage is committed + UI shows success
+      setTimeout(() => {
+        console.log("[Login] Executing hard redirect to /dashboard");
+        window.location.href = "/dashboard";  // ← most reliable in Next.js App Router
+      }, 1500);
+
+    } catch (err: any) {
+      console.error("[Login] Error during login:", err);
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Image starts at very left edge and is huge */}
-      <div className="hidden md:flex md:w-4/5 items-center justify-start">
+    <div className="min-h-screen flex bg-white">
+      {/* Left Side - Image (desktop only) */}
+      <div className="hidden lg:flex lg:w-3/5 items-center justify-start">
         <div className="w-full h-full flex items-center">
           <Image
             src="/images/bill.png"
             alt="Split Bills Illustration"
-            width={1000}
-            height={1000}
-              style={{ marginLeft: '-300px' }}
+            width={900}
+            height={900}
+            className="w-auto h-[90vh] object-contain"
+            priority
           />
         </div>
       </div>
 
-      {/* Right Side - Signup panel at extreme right */}
-      <div className="w-full md:w-1/5 min-w-[400px] flex items-center justify-end">
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-2/5 flex items-center justify-center">
         <div className="w-full max-w-md p-8">
           {/* Logo */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-10">Splito</h1>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">$</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">Splito</span>
+          </div>
 
-          {/* Sign Up / Login Buttons */}
-          <div className="flex space-x-2 mb-10">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mb-6">
             <Link
-              href="/signup"
-              className="flex-1 py-3 text-center text-gray-600 font-medium hover:text-gray-900"
+              href="/authentication/signup"
+              className="flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700"
             >
               Sign Up
             </Link>
             <Link
-              href="/login"
-              className="flex-1 py-3 text-center text-blue-600 font-medium border-b-2 border-blue-600"
+              href="/authentication/login"
+              className="flex-1 py-3 text-center text-emerald-600 font-medium border-b-2 border-emerald-500"
             >
-              Login
+              Log In
             </Link>
           </div>
 
-          {/* Google Button */}
-          <button className="w-full py-3 border border-gray-300 rounded-lg mb-6 hover:bg-gray-50">
-            <span className="text-gray-700">sign in with google</span>
-          </button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+          <p className="text-gray-600 text-sm mb-6">Log in to your account</p>
 
-          {/* Divider */}
-          <div className="flex items-center my-8">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="px-4 text-sm text-gray-500">OR</span>
-            <div className="flex-1 h-px bg-gray-300"></div>
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+              <div className="font-medium">Success!</div>
+              <div>{success}</div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              <div className="font-medium">Error</div>
+              <div>{error}</div>
+            </div>
+          )}
+
+          {/* Test credentials hint */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm">
+            <div className="font-medium">Test Credentials</div>
+            <div className="mt-1 text-xs">
+              Email: <code className="bg-blue-100 px-1 rounded">test@gmail.com</code><br />
+              Password: <code className="bg-blue-100 px-1 rounded">test123</code>
+            </div>
           </div>
 
-          {/* Email Field */}
-          <div className="mb-6">
-            <label className="block text-sm text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              placeholder="Enter Email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Email address
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="you@example.com"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+                autoComplete="email"
+              />
+            </div>
 
-          {/* Password Field */}
-          <div className="mb-6">
-            <label className="block text-sm text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              placeholder="Enter Password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-medium text-gray-700">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700">
+                  Forgot?
+                </Link>
+              </div>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+                autoComplete="current-password"
+              />
+            </div>
 
-          {/* Forgot Password Link */}
-          <div className="text-right mb-8">
-            <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-              forgot password?
-            </Link>
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 disabled:bg-emerald-300 text-sm mt-2 flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Logging in...
+                </>
+              ) : (
+                'Log In'
+              )}
+            </button>
+          </form>
 
-          {/* Login Button */}
-          <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 mb-8">
-            Login
-          </button>
-
-          {/* Sign Up Link */}
-          <div className="text-center">
-            <p className="text-gray-600">
+          <div className="text-center mt-6 pt-6 border-t border-gray-200">
+            <p className="text-gray-600 text-sm">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 font-medium hover:underline">
-                Sign up for free
+              <Link href="/authentication/signup" className="text-emerald-600 font-medium hover:text-emerald-700">
+                Sign up
               </Link>
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile Layout */}
-      <div className="md:hidden w-full p-6">
-        {/* Logo */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-8">Splito</h1>
-
-        {/* Sign Up / Login Buttons */}
-        <div className="flex space-x-2 mb-8">
-          <Link
-            href="/signup"
-            className="flex-1 py-2.5 text-center text-gray-600 font-medium hover:text-gray-900"
-          >
-            Sign Up
-          </Link>
-          <Link
-            href="/login"
-            className="flex-1 py-2.5 text-center text-blue-600 font-medium border-b-2 border-blue-600"
-          >
-            Login
-          </Link>
-        </div>
-
-        {/* Form */}
-        <div className="space-y-6">
-          {/* Google Button */}
-          <button className="w-full py-2.5 border border-gray-300 rounded hover:bg-gray-50">
-            <span className="text-gray-600">sign in with google</span>
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="px-3 text-sm text-gray-500">OR</span>
-            <div className="flex-1 h-px bg-gray-300"></div>
-          </div>
-
-          {/* Email Field */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="Enter Email"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              placeholder="Enter Password"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          {/* Forgot Password Link */}
-          <div className="text-right">
-            <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-              forgot password?
-            </Link>
-          </div>
-
-          {/* Login Button */}
-          <button className="w-full bg-blue-600 text-white py-2.5 rounded font-medium hover:bg-blue-700">
-            Login
-          </button>
-
-          {/* Sign Up Link */}
-          <div className="text-center pt-6">
-            <p className="text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 font-medium hover:underline">
-                Sign up for free
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* Mobile Image */}
-        <div className="mt-12">
-          {/* <Image
-            src="/images/bill.png"
-            alt="Split Bills Illustration"
-            width={50}
-            height={50}
-            className="w-full h-auto object-contain"
-          /> */}
         </div>
       </div>
     </div>

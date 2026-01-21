@@ -2,152 +2,241 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { FcGoogle } from 'react-icons/fc';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { registerUser } from '@/api/auths';
 
-export default function Home() {
+export default function SignupPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError(""); // Clear error when user starts typing
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    // Basic validation
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await registerUser(formData);
+      
+      // Store token and user data
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("user", JSON.stringify(res.user));
+      
+      // Redirect to dashboard
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-white font-sans">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          {/* <Image 
-            src="/images/logo.png" 
-            alt="Splitto Logo" 
-            width={100} 
-            height={50}
-            className="w-10 h-10"
-          /> */}
-          <span className="text-xl font-bold text-gray-900">Splitto</span>
+    <div className="min-h-screen flex bg-white">
+      {/* Left Side - Large Image */}
+      <div className="hidden lg:flex lg:w-3/5 items-center justify-start">
+        <div className="w-full h-full flex items-center">
+          <Image
+            src="/images/bill.png"
+            alt="Split Bills Illustration"
+            width={900}
+            height={900}
+            className="w-auto h-[90vh] object-contain"
+            priority
+          />
         </div>
-        <div className="flex space-x-4">
-          <Link 
-            href="/authentication/signup" 
-            className="px-6 py-3 bg-teal-400 text-white rounded-full font-medium hover:opacity-90 transition-shadow shadow-sm"
-          >
-            Sign Up
-          </Link>
-          <Link 
-            href="/authentication/login" 
-            className="px-6 py-3 border-2 border-teal-400 text-teal-400 rounded-full font-medium hover:opacity-90 transition-shadow"
-          >
-            Login
-          </Link>
-        </div>
-      </header>
+      </div>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-12 md:py-20">
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-          {/* Left Content */}
-          <div className="lg:w-1/2 flex flex-col gap-8">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
-              Manage Group<br />
-              <span className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900">Expenses the</span><br />
-              Easy Way
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600">
-              Helps you to organize your Bills
-            </p>
-
-            {/* --- Cards Container --- */}
-            <div className="flex flex-col md:flex-row gap-6 lg:gap-8 mt-8">
-              {/* This Month / Last Month Card */}
-              <div className="bg-gradient-to-br from-teal-400 to-teal-500 rounded-xl shadow-md p-6 flex-1 text-white">
-                <h3 className="text-sm font-semibold mb-3 uppercase opacity-90">This Month</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs opacity-90">Total Income</span>
-                    <span className="text-lg font-bold">+10,200</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs opacity-90">Total Expenses</span>
-                    <span className="text-lg font-bold">50,000</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs opacity-90">Balance</span>
-                    <span className="text-lg font-bold">35,000</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Split Bill Card */}
-              <div className="bg-[#1A1F2E] text-white rounded-xl shadow-xl p-6 flex-1">
-                <h3 className="text-xl font-bold mb-3">Split bill the easy way</h3>
-                <p className="text-sm opacity-90 leading-relaxed">
-                  You can quickly log daily transactions within seconds and organize them into clean, visual categories like Expenses: Food, Shopping or Income: Salary, Gift, making group expense tracking simple and transparent.
-                </p>
-              </div>
+      {/* Right Side - Signup Form */}
+      <div className="w-full lg:w-2/5 flex items-center justify-center">
+        <div className="w-full max-w-md p-8">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">$</span>
             </div>
+            <span className="text-xl font-bold text-gray-900">Splito</span>
           </div>
 
-          {/* Right Illustration */}
-          <div className="lg:w-1/2 flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-md">
-              <Image 
-                src="/images/landing-illustration.png" 
-                alt="Expense Management Illustration"
-                width={500}
-                height={500}
-                className="w-full h-auto object-contain"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Split Bill / Tyre Section */}
-      <section className="bg-gray-50 py-16 md:py-20">
-        <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-12">
-          {/* Illustration */}
-          <div className="lg:w-1/2 flex justify-center lg:justify-start">
-            <div className="relative w-full max-w-sm">
-              <Image 
-                src="/images/tyre.png" 
-                alt="Split Bill Illustration"
-                width={350}
-                height={350}
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          </div>
-
-          {/* Text */}
-          <div className="lg:w-1/2 lg:pl-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Split bill <span className="text-teal-400">the easy way</span>
-            </h2>
-            <p className="text-base text-gray-600 leading-relaxed mb-8">
-              You can quickly log daily transactions within seconds and organize them into clean, 
-              visual categories like Expenses: Food, Shopping or Income: Salary, Gift, making 
-              group expense tracking simple and transparent.
-            </p>
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mb-6">
             <Link
               href="/authentication/signup"
-              className="px-8 py-3 bg-teal-400 text-white rounded-full font-medium hover:opacity-90 transition-shadow shadow-sm"
+              className="flex-1 py-3 text-center text-emerald-600 font-medium border-b-2 border-emerald-500"
             >
-              Get Started Free
+              Sign Up
+            </Link>
+            <Link
+              href="/authentication/login"
+              className="flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700"
+            >
+              Log In
             </Link>
           </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <Image 
-              src="/images/logo.png" 
-              alt="Splitto Logo" 
-              width={30} 
-              height={30}
-            />
-            <span className="text-lg font-bold text-gray-900">Splitto</span>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h1>
+          <p className="text-gray-600 text-sm mb-6">Start splitting bills with friends</p>
+
+          {/* Google Button */}
+          <button className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 mb-4">
+            <FcGoogle className="w-4 h-4" />
+            <span className="text-gray-700 font-medium text-sm">Sign up with Google</span>
+          </button>
+
+          {/* Divider */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-500 text-xs">or</span>
+            </div>
           </div>
-          <div className="text-gray-500 text-sm">
-            © 2024 Splitto. All rights reserved.
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form className="space-y-4" onSubmit={handleSignup}>
+            {/* Username Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Choose a username"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+                minLength={3}
+              />
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Email address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+              />
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="At least 6 characters"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+                minLength={6}
+              />
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                required
+                minLength={6}
+              />
+            </div>
+
+            {/* Terms and Conditions */}
+            <div className="flex items-start">
+              <input
+                type="checkbox"
+                id="terms"
+                className="h-3 w-3 mt-1 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                required
+              />
+              <label htmlFor="terms" className="ml-2 text-xs text-gray-600">
+                I agree to the <Link href="/terms" className="text-emerald-600 hover:text-emerald-700">Terms of Service</Link> and <Link href="/privacy" className="text-emerald-600 hover:text-emerald-700">Privacy Policy</Link>
+              </label>
+            </div>
+
+            {/* Sign Up Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 disabled:bg-emerald-300 text-sm mt-2 flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Creating account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          {/* Login Link */}
+          <div className="text-center mt-6 pt-6 border-t border-gray-200">
+            <p className="text-gray-600 text-sm">
+              Already have an account?{' '}
+              <Link 
+                href="/authentication/login" 
+                className="text-emerald-600 font-medium hover:text-emerald-700"
+              >
+                Log in
+              </Link>
+            </p>
           </div>
         </div>
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }
