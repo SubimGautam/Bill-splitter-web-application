@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { 
   FaUsers, 
   FaReceipt, 
@@ -54,10 +53,10 @@ export default function DashboardPage() {
 
   // Sample data
   const groups: Group[] = [
-    { id: 1, name: 'Roommates', members: 3, total: 1200, color: 'bg-emerald-500' },
-    { id: 2, name: 'Weekend Trip', members: 5, total: 850, color: 'bg-blue-500' },
-    { id: 3, name: 'Office Lunch', members: 8, total: 320, color: 'bg-purple-500' },
-    { id: 4, name: 'Family', members: 4, total: 2100, color: 'bg-amber-500' },
+    { id: 1, name: 'Roommates', members: 3, total: 1200, color: '#10b981' },
+    { id: 2, name: 'Weekend Trip', members: 5, total: 850, color: '#3b82f6' },
+    { id: 3, name: 'Office Lunch', members: 8, total: 320, color: '#8b5cf6' },
+    { id: 4, name: 'Family', members: 4, total: 2100, color: '#f59e0b' },
   ];
 
   const recentExpenses: Expense[] = [
@@ -73,53 +72,43 @@ export default function DashboardPage() {
     { person: 'Jordan', amount: 15.00, type: 'settled', avatar: 'J' },
   ];
 
-  // ── Replaced authentication logic ───────────────────────────────
+  // Authentication logic
   useEffect(() => {
-    console.log("[Dashboard] Starting auth check – waiting a bit...");
-    let attempts = 0;
-    const maxAttempts = 5;
-    const tryAuth = () => {
-      attempts++;
-      console.log(`[Dashboard] Attempt ${attempts}/${maxAttempts}`);
+    console.log("[Dashboard] Starting auth check...");
+    
+    const checkAuth = () => {
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
-      console.log(" Token:", token ? "yes" : "MISSING");
-      console.log(" UserStr length:", userStr?.length || "MISSING");
+      
+      console.log("Token:", token ? "yes" : "MISSING");
+      console.log("User:", userStr ? "yes" : "MISSING");
+      
       if (!token || !userStr) {
-        if (attempts < maxAttempts) {
-          console.log(" → Not ready yet – retrying in 500ms");
-          setTimeout(tryAuth, 500);
-          return;
-        }
-        console.log("[Dashboard] No auth data after all retries → going to login");
-        window.location.replace("/authentication/login");
+        console.log("[Dashboard] No auth data → going to login");
+        window.location.href = "/authentication/login";
         return;
       }
+      
       try {
         const parsed = JSON.parse(userStr);
         console.log("[Dashboard] Parsed user:", parsed.email, parsed.username);
         setUser(parsed);
+        setLoading(false);
       } catch (e) {
         console.error("[Dashboard] Parse error:", e);
         localStorage.clear();
-        window.location.replace("/authentication/login");
-      } finally {
-        setLoading(false);
+        window.location.href = "/authentication/login";
       }
     };
-    // Give plenty of time for localStorage to be written
-    setTimeout(tryAuth, 1200);
-
-    return () => {
-      // cleanup not really needed here
-    };
+    
+    // Check auth with a delay
+    setTimeout(checkAuth, 100);
   }, []);
-  // ────────────────────────────────────────────────────────────────
 
   const handleLogout = () => {
     console.log("[DASHBOARD] Logout clicked");
     localStorage.clear();
-    window.location.replace("/authentication/login");
+    window.location.href = "/authentication/login";
   };
 
   const refreshData = () => {
@@ -138,425 +127,740 @@ export default function DashboardPage() {
     alert(`Token: ${token ? "Present" : "Missing"}\nUser: ${user ? "Present" : "Missing"}`);
   };
 
+  // Inline styles
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      backgroundColor: "#f9fafb",
+    },
+    nav: {
+      backgroundColor: "#fff",
+      borderBottom: "1px solid #e5e7eb",
+      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+    },
+    navInner: {
+      padding: "1rem 1.5rem",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      maxWidth: "1280px",
+      margin: "0 auto",
+    },
+    logoContainer: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.75rem",
+    },
+    logoIcon: {
+      width: "2rem",
+      height: "2rem",
+      backgroundColor: "#10b981",
+      borderRadius: "0.5rem",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoText: {
+      fontSize: "1.25rem",
+      fontWeight: "bold",
+      color: "#111827",
+    },
+    navLinks: {
+      display: "none",
+      gap: "1.5rem",
+    },
+    navLink: {
+      color: "#4b5563",
+      fontSize: "0.875rem",
+      fontWeight: 500,
+      textDecoration: "none",
+    },
+    navLinkActive: {
+      color: "#10b981",
+      borderBottom: "2px solid #10b981",
+      paddingBottom: "0.25rem",
+    },
+    iconButton: {
+      padding: "0.5rem",
+      backgroundColor: "transparent",
+      border: "none",
+      borderRadius: "0.5rem",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    userAvatar: {
+      width: "2rem",
+      height: "2rem",
+      backgroundColor: "#d1fae5",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+    },
+    mainContent: {
+      padding: "2rem 1rem",
+      maxWidth: "1280px",
+      margin: "0 auto",
+    },
+    welcomeHeader: {
+      marginBottom: "2rem",
+    },
+    welcomeTitle: {
+      fontSize: "1.875rem",
+      fontWeight: "bold",
+      color: "#111827",
+      marginBottom: "0.5rem",
+    },
+    welcomeSubtitle: {
+      color: "#4b5563",
+    },
+    statsGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(1, 1fr)",
+      gap: "1.5rem",
+      marginBottom: "2rem",
+    },
+    statCard: {
+      backgroundColor: "#fff",
+      borderRadius: "0.75rem",
+      padding: "1.5rem",
+      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+    },
+    cardTitle: {
+      fontSize: "0.875rem",
+      color: "#6b7280",
+      marginBottom: "0.5rem",
+    },
+    cardValue: {
+      fontSize: "1.5rem",
+      fontWeight: "bold",
+      color: "#111827",
+      marginBottom: "0.25rem",
+    },
+    cardSubtitle: {
+      fontSize: "0.75rem",
+      color: "#10b981",
+    },
+    iconContainer: {
+      width: "3rem",
+      height: "3rem",
+      borderRadius: "0.5rem",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    contentGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(1, 1fr)",
+      gap: "2rem",
+    },
+    sectionCard: {
+      backgroundColor: "#fff",
+      borderRadius: "0.75rem",
+      padding: "1.5rem",
+      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+    },
+    sectionHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "1.5rem",
+    },
+    sectionTitle: {
+      fontSize: "1.25rem",
+      fontWeight: "bold",
+      color: "#111827",
+    },
+    primaryButton: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.5rem 1rem",
+      backgroundColor: "#10b981",
+      color: "white",
+      border: "none",
+      borderRadius: "0.5rem",
+      fontSize: "0.875rem",
+      fontWeight: 500,
+      cursor: "pointer",
+    },
+    groupsGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(1, 1fr)",
+      gap: "1rem",
+    },
+    groupCard: {
+      border: "1px solid #e5e7eb",
+      borderRadius: "0.5rem",
+      padding: "1rem",
+      cursor: "pointer",
+    },
+    groupCardActive: {
+      borderColor: "#10b981",
+      backgroundColor: "#f0fdf4",
+    },
+    expenseItem: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingBottom: "1rem",
+      borderBottom: "1px solid #f3f4f6",
+    },
+    balanceItem: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0.5rem 0",
+    },
+    quickActionButton: {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0.75rem",
+      border: "1px solid #e5e7eb",
+      borderRadius: "0.5rem",
+      backgroundColor: "transparent",
+      cursor: "pointer",
+    },
+    userInfoCard: {
+      background: "linear-gradient(to right, #f0fdf4, #eff6ff)",
+      border: "1px solid #bbf7d0",
+      borderRadius: "0.75rem",
+      padding: "1.5rem",
+    },
+  };
+
+  // Media queries for responsive design
+  const mediaQueries = `
+    @media (min-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      .nav-links {
+        display: flex !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+      .content-grid {
+        grid-template-columns: 2fr 1fr !important;
+      }
+      .groups-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+  `;
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#f9fafb"
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "4rem",
+            height: "4rem",
+            border: "4px solid #10b981",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto"
+          }}></div>
+          <p style={{ marginTop: "1rem", color: "#6b7280" }}>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    console.log("[DASHBOARD] No user after loading finished → safety redirect");
-    if (typeof window !== 'undefined') {
-      window.location.replace("/authentication/login");
-    }
-    return null;
+    return null; // Will redirect in useEffect
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">$</span>
+    <>
+      <style jsx global>{mediaQueries}</style>
+      <div style={styles.container}>
+        {/* Top Navigation */}
+        <nav style={styles.nav}>
+          <div style={styles.navInner}>
+            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+              <div style={styles.logoContainer}>
+                <div style={styles.logoIcon}>
+                  <span style={{ color: "white", fontWeight: "bold", fontSize: "1rem" }}>$</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Splito</span>
+                <span style={styles.logoText}>Splito</span>
               </div>
               
-              <div className="hidden md:flex space-x-6">
-                <Link href="/dashboard" className="text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1">
+              <div style={{ ...styles.navLinks, display: "none" }} className="nav-links">
+                <a href="/dashboard" style={{ ...styles.navLink, ...styles.navLinkActive }}>
                   Dashboard
-                </Link>
-                <Link href="/groups" className="text-gray-600 hover:text-emerald-600 font-medium">
+                </a>
+                <a href="/groups" style={styles.navLink}>
                   Groups
-                </Link>
-                <Link href="/expenses" className="text-gray-600 hover:text-emerald-600 font-medium">
+                </a>
+                <a href="/expenses" style={styles.navLink}>
                   Expenses
-                </Link>
-                <Link href="/activity" className="text-gray-600 hover:text-emerald-600 font-medium">
+                </a>
+                <a href="/activity" style={styles.navLink}>
                   Activity
-                </Link>
+                </a>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <button 
                 onClick={refreshData}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                style={styles.iconButton}
                 title="Refresh"
               >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <FaSearch className="text-gray-500" />
+              <button style={styles.iconButton}>
+                <FaSearch style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative">
-                <FaBell className="text-gray-500" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <button style={{ ...styles.iconButton, position: "relative" }}>
+                <FaBell style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
+                <span style={{
+                  position: "absolute",
+                  top: "-0.25rem",
+                  right: "-0.25rem",
+                  width: "0.5rem",
+                  height: "0.5rem",
+                  backgroundColor: "#ef4444",
+                  borderRadius: "50%"
+                }}></span>
               </button>
-              <div className="flex items-center space-x-3">
-                <div className="relative group">
-                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center cursor-pointer">
-                    <span className="text-emerald-600 font-bold">
-                      {user.username?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                  {/* Dropdown menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-                    <div className="p-4 border-b border-gray-100">
-                      <p className="font-medium text-gray-900">{user.username}</p>
-                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
-                    </div>
-                    <div className="py-2">
-                      <button 
-                        onClick={checkLocalStorage}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        Debug Info
-                      </button>
-                      <button 
-                        onClick={refreshData}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        Refresh Data
-                      </button>
-                      <button 
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <FaSignOutAlt className="w-3 h-3" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-gray-700 font-medium">{user.username}</p>
-                  <p className="text-gray-500 text-xs">{user.email}</p>
+              <div style={{ position: "relative" }}>
+                <div style={styles.userAvatar}>
+                  <span style={{ color: "#10b981", fontWeight: "bold" }}>
+                    {user.username?.charAt(0).toUpperCase() || 'U'}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Welcome back, {user.username}! 👋
-              </h1>
-              <p className="text-gray-600 mt-2">Here's your expense overview</p>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={checkLocalStorage}
-                className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200"
-              >
-                Debug
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="px-3 py-1 bg-red-100 text-red-600 text-sm rounded-lg hover:bg-red-200 flex items-center gap-1"
-              >
-                <FaSignOutAlt className="w-3 h-3" />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
+        <div style={styles.mainContent}>
+          {/* Welcome Header */}
+          <div style={styles.welcomeHeader}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <p className="text-sm text-gray-500">Total Balance</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">$+63.75</p>
-                <p className="text-xs text-emerald-600 mt-1">You are owed</p>
+                <h1 style={styles.welcomeTitle}>
+                  Welcome back, {user.username}! 👋
+                </h1>
+                <p style={styles.welcomeSubtitle}>Here's your expense overview</p>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <FaMoneyBillWave className="text-emerald-600 text-xl" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Active Groups</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">4</p>
-                <p className="text-xs text-blue-600 mt-1">Across all groups</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FaUsers className="text-blue-600 text-xl" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">This Month</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">$485.25</p>
-                <p className="text-xs text-purple-600 mt-1">Total spent</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <FaChartPie className="text-purple-600 text-xl" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Pending</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">2</p>
-                <p className="text-xs text-amber-600 mt-1">Awaiting payment</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <FaReceipt className="text-amber-600 text-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Groups & Recent Expenses */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Groups Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Your Groups</h2>
-                <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-sm">
-                  <FaPlus className="w-3 h-3" />
-                  New Group
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button 
+                  onClick={checkLocalStorage}
+                  style={{
+                    padding: "0.375rem 0.75rem",
+                    backgroundColor: "#f3f4f6",
+                    color: "#4b5563",
+                    fontSize: "0.875rem",
+                    borderRadius: "0.5rem",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Debug
+                </button>
+                <button 
+                  onClick={handleLogout}
+                  style={{
+                    padding: "0.375rem 0.75rem",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    fontSize: "0.875rem",
+                    borderRadius: "0.5rem",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                  }}
+                >
+                  <FaSignOutAlt style={{ width: "0.75rem", height: "0.75rem" }} />
+                  Logout
                 </button>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {groups.map((group) => (
-                  <div 
-                    key={group.id}
-                    className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${activeGroup === group.name ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}
-                    onClick={() => setActiveGroup(group.name)}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 ${group.color} rounded-lg flex items-center justify-center`}>
-                          <FaUsers className="text-white" />
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div style={{ ...styles.statsGrid }} className="stats-grid">
+            <div style={styles.statCard}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={styles.cardTitle}>Total Balance</p>
+                  <p style={styles.cardValue}>$+63.75</p>
+                  <p style={styles.cardSubtitle}>You are owed</p>
+                </div>
+                <div style={{ ...styles.iconContainer, backgroundColor: "#d1fae5" }}>
+                  <FaMoneyBillWave style={{ color: "#10b981", fontSize: "1.5rem" }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.statCard}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={styles.cardTitle}>Active Groups</p>
+                  <p style={styles.cardValue}>4</p>
+                  <p style={{ ...styles.cardSubtitle, color: "#3b82f6" }}>Across all groups</p>
+                </div>
+                <div style={{ ...styles.iconContainer, backgroundColor: "#dbeafe" }}>
+                  <FaUsers style={{ color: "#3b82f6", fontSize: "1.5rem" }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.statCard}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={styles.cardTitle}>This Month</p>
+                  <p style={styles.cardValue}>$485.25</p>
+                  <p style={{ ...styles.cardSubtitle, color: "#8b5cf6" }}>Total spent</p>
+                </div>
+                <div style={{ ...styles.iconContainer, backgroundColor: "#f3e8ff" }}>
+                  <FaChartPie style={{ color: "#8b5cf6", fontSize: "1.5rem" }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.statCard}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={styles.cardTitle}>Pending</p>
+                  <p style={styles.cardValue}>2</p>
+                  <p style={{ ...styles.cardSubtitle, color: "#f59e0b" }}>Awaiting payment</p>
+                </div>
+                <div style={{ ...styles.iconContainer, backgroundColor: "#fef3c7" }}>
+                  <FaReceipt style={{ color: "#f59e0b", fontSize: "1.5rem" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ ...styles.contentGrid }} className="content-grid">
+            {/* Left Column - Groups & Recent Expenses */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+              {/* Groups Section */}
+              <div style={styles.sectionCard}>
+                <div style={styles.sectionHeader}>
+                  <h2 style={styles.sectionTitle}>Your Groups</h2>
+                  <button style={styles.primaryButton}>
+                    <FaPlus style={{ width: "0.75rem", height: "0.75rem" }} />
+                    New Group
+                  </button>
+                </div>
+                
+                <div style={{ ...styles.groupsGrid }} className="groups-grid">
+                  {groups.map((group) => (
+                    <div 
+                      key={group.id}
+                      style={{
+                        ...styles.groupCard,
+                        ...(activeGroup === group.name ? styles.groupCardActive : {}),
+                        borderColor: activeGroup === group.name ? "#10b981" : "#e5e7eb",
+                        backgroundColor: activeGroup === group.name ? "#f0fdf4" : "white",
+                      }}
+                      onClick={() => setActiveGroup(group.name)}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <div style={{
+                            width: "2.5rem",
+                            height: "2.5rem",
+                            backgroundColor: group.color,
+                            borderRadius: "0.5rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}>
+                            <FaUsers style={{ color: "white" }} />
+                          </div>
+                          <div>
+                            <h3 style={{ fontWeight: 500, color: "#111827" }}>{group.name}</h3>
+                            <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>{group.members} members</p>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#111827" }}>${group.total.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
+                        <span style={{ color: "#6b7280" }}>Last activity: Today</span>
+                        <span style={{ color: "#10b981", fontWeight: 500 }}>View →</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Expenses */}
+              <div style={styles.sectionCard}>
+                <div style={styles.sectionHeader}>
+                  <h2 style={styles.sectionTitle}>Recent Expenses</h2>
+                  <button style={{ ...styles.navLink, border: "none", backgroundColor: "transparent", cursor: "pointer" }}>
+                    View all →
+                  </button>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {recentExpenses.map((expense) => (
+                    <div key={expense.id} style={styles.expenseItem}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <div style={{
+                          width: "2.5rem",
+                          height: "2.5rem",
+                          backgroundColor: "#f3f4f6",
+                          borderRadius: "0.5rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}>
+                          <FaReceipt style={{ color: "#6b7280" }} />
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900">{group.name}</h3>
-                          <p className="text-sm text-gray-500">{group.members} members</p>
+                          <h4 style={{ fontWeight: 500, color: "#111827" }}>{expense.description}</h4>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                            <span style={{ padding: "0.125rem 0.5rem", backgroundColor: "#f3f4f6", borderRadius: "0.25rem" }}>{expense.group}</span>
+                            <span>•</span>
+                            <span style={expense.person === 'You' ? { color: "#10b981", fontWeight: 500 } : {}}>
+                              {expense.person}
+                            </span>
+                            <span>•</span>
+                            <span>{expense.date}</span>
+                          </div>
                         </div>
                       </div>
-                      <span className="text-lg font-bold text-gray-900">${group.total.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Last activity: Today</span>
-                      <span className="text-emerald-600 font-medium">View →</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Expenses */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Recent Expenses</h2>
-                <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm">
-                  View all →
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {recentExpenses.map((expense) => (
-                  <div key={expense.id} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <FaReceipt className="text-gray-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{expense.description}</h4>
-                        <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                          <span className="px-2 py-0.5 bg-gray-100 rounded">{expense.group}</span>
-                          <span>•</span>
-                          <span className={expense.person === 'You' ? 'text-emerald-600 font-medium' : ''}>
-                            {expense.person}
-                          </span>
-                          <span>•</span>
-                          <span>{expense.date}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">${expense.amount.toFixed(2)}</p>
-                      <p className={`text-sm ${expense.person === 'You' ? 'text-emerald-600' : 'text-gray-500'}`}>
-                        {expense.person === 'You' ? 'You paid' : 'You owe'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button className="w-full mt-6 py-3 border border-dashed border-gray-300 rounded-lg hover:border-emerald-500 hover:text-emerald-600 text-gray-500 flex items-center justify-center gap-2">
-                <FaPlus />
-                Add new expense
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Balances */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Balances</h2>
-              
-              <div className="space-y-4">
-                {balances.map((balance, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${balance.type === 'owes you' ? 'bg-emerald-100' : balance.type === 'you owe' ? 'bg-red-100' : 'bg-gray-100'}`}>
-                        <span className={`font-bold ${balance.type === 'owes you' ? 'text-emerald-600' : balance.type === 'you owe' ? 'text-red-600' : 'text-gray-600'}`}>
-                          {balance.avatar}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{balance.person}</h4>
-                        <p className={`text-sm ${balance.type === 'owes you' ? 'text-emerald-600' : balance.type === 'you owe' ? 'text-red-600' : 'text-gray-500'}`}>
-                          {balance.type === 'settled' ? 'All settled up' : balance.type}
+                      <div style={{ textAlign: "right" }}>
+                        <p style={{ fontWeight: "bold", color: "#111827" }}>${expense.amount.toFixed(2)}</p>
+                        <p style={{ fontSize: "0.875rem", color: expense.person === 'You' ? "#10b981" : "#6b7280" }}>
+                          {expense.person === 'You' ? 'You paid' : 'You owe'}
                         </p>
                       </div>
                     </div>
-                    <div className={`text-lg font-bold ${balance.type === 'owes you' ? 'text-emerald-600' : balance.type === 'you owe' ? 'text-red-600' : 'text-gray-900'}`}>
-                      {balance.type === 'owes you' ? '+' : balance.type === 'you owe' ? '-' : ''}${balance.amount.toFixed(2)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <button className="w-full mt-6 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600">
-                Settle Up
-              </button>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-              
-              <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-emerald-500 hover:text-emerald-600 hover:shadow transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <FaPlus className="text-emerald-600" />
-                    </div>
-                    <span>Add expense</span>
-                  </div>
-                  <span className="text-gray-400">→</span>
-                </button>
-
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-emerald-500 hover:text-emerald-600 hover:shadow transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FaUsers className="text-blue-600" />
-                    </div>
-                    <span>Create group</span>
-                  </div>
-                  <span className="text-gray-400">→</span>
-                </button>
-
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-emerald-500 hover:text-emerald-600 hover:shadow transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <FaCalendarAlt className="text-purple-600" />
-                    </div>
-                    <span>View report</span>
-                  </div>
-                  <span className="text-gray-400">→</span>
-                </button>
-
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-emerald-500 hover:text-emerald-600 hover:shadow transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <FaCog className="text-gray-600" />
-                    </div>
-                    <span>Settings</span>
-                  </div>
-                  <span className="text-gray-400">→</span>
+                <button style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  border: "1px dashed #d1d5db",
+                  borderRadius: "0.5rem",
+                  backgroundColor: "transparent",
+                  color: "#6b7280",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  marginTop: "1.5rem",
+                  cursor: "pointer",
+                }}>
+                  <FaPlus />
+                  Add new expense
                 </button>
               </div>
             </div>
 
-            {/* User Info Card */}
-            <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-100 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow">
-                  <FaUserCircle className="text-emerald-600 text-2xl" />
+            {/* Right Column */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+              {/* Balances */}
+              <div style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Balances</h2>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+                  {balances.map((balance, index) => (
+                    <div key={index} style={styles.balanceItem}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <div style={{
+                          width: "2.5rem",
+                          height: "2.5rem",
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: balance.type === 'owes you' ? "#d1fae5" : balance.type === 'you owe' ? "#fee2e2" : "#f3f4f6",
+                        }}>
+                          <span style={{
+                            fontWeight: "bold",
+                            color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#6b7280",
+                          }}>
+                            {balance.avatar}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 style={{ fontWeight: 500, color: "#111827" }}>{balance.person}</h4>
+                          <p style={{
+                            fontSize: "0.875rem",
+                            color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#6b7280",
+                          }}>
+                            {balance.type === 'settled' ? 'All settled up' : balance.type}
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: "1.125rem",
+                        fontWeight: "bold",
+                        color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#111827",
+                      }}>
+                        {balance.type === 'owes you' ? '+' : balance.type === 'you owe' ? '-' : ''}${balance.amount.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{user.username}</h3>
-                  <p className="text-sm text-gray-600 truncate">{user.email}</p>
+
+                <button style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  backgroundColor: "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}>
+                  Settle Up
+                </button>
+              </div>
+
+              {/* Quick Actions */}
+              <div style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Quick Actions</h2>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <button style={styles.quickActionButton}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#d1fae5", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <FaPlus style={{ color: "#10b981" }} />
+                      </div>
+                      <span>Add expense</span>
+                    </div>
+                    <span style={{ color: "#9ca3af" }}>→</span>
+                  </button>
+
+                  <button style={styles.quickActionButton}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#dbeafe", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <FaUsers style={{ color: "#3b82f6" }} />
+                      </div>
+                      <span>Create group</span>
+                    </div>
+                    <span style={{ color: "#9ca3af" }}>→</span>
+                  </button>
+
+                  <button style={styles.quickActionButton}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#f3e8ff", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <FaCalendarAlt style={{ color: "#8b5cf6" }} />
+                      </div>
+                      <span>View report</span>
+                    </div>
+                    <span style={{ color: "#9ca3af" }}>→</span>
+                  </button>
+
+                  <button style={styles.quickActionButton}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#f3f4f6", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <FaCog style={{ color: "#6b7280" }} />
+                      </div>
+                      <span>Settings</span>
+                    </div>
+                    <span style={{ color: "#9ca3af" }}>→</span>
+                  </button>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Status</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                    Active
-                  </span>
+
+              {/* User Info Card */}
+              <div style={styles.userInfoCard}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                  <div style={{ width: "3rem", height: "3rem", backgroundColor: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)" }}>
+                    <FaUserCircle style={{ color: "#10b981", fontSize: "2rem" }} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: "bold", color: "#111827" }}>{user.username}</h3>
+                    <p style={{ fontSize: "0.875rem", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Role</span>
-                  <span className="font-medium">{user.role}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#6b7280" }}>Status</span>
+                    <span style={{ padding: "0.125rem 0.5rem", backgroundColor: "#d1fae5", color: "#047857", borderRadius: "9999px", fontSize: "0.75rem", fontWeight: 500 }}>
+                      Active
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#6b7280" }}>Role</span>
+                    <span style={{ fontWeight: 500 }}>{user.role}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#6b7280" }}>Member since</span>
+                    <span style={{ fontWeight: 500 }}>Today</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Member since</span>
-                  <span className="font-medium">Today</span>
-                </div>
+                <button 
+                  onClick={handleLogout}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    border: "1px solid #10b981",
+                    color: "#10b981",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FaSignOutAlt style={{ width: "0.75rem", height: "0.75rem" }} />
+                  Sign Out
+                </button>
               </div>
-              <button 
-                onClick={handleLogout}
-                className="w-full mt-4 py-2 border border-emerald-500 text-emerald-600 rounded-lg hover:bg-emerald-50 flex items-center justify-center gap-2"
-              >
-                <FaSignOutAlt className="w-3 h-3" />
-                Sign Out
-              </button>
             </div>
           </div>
-        </div>
 
-        {/* Debug Footer */}
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Logged in as: <span className="font-medium text-gray-700">{user.email}</span>
+          {/* Debug Footer */}
+          <div style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                Logged in as: <span style={{ fontWeight: 500, color: "#374151" }}>{user.email}</span>
+              </div>
+              <button
+                onClick={() => {
+                  console.log("🔍 Current user:", user);
+                  console.log("🔑 Token:", localStorage.getItem("token")?.substring(0, 20) + "...");
+                }}
+                style={{
+                  padding: "0.375rem 0.75rem",
+                  backgroundColor: "#f3f4f6",
+                  color: "#4b5563",
+                  fontSize: "0.875rem",
+                  borderRadius: "0.5rem",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Console Log
+              </button>
             </div>
-            <button
-              onClick={() => {
-                console.log("🔍 Current user:", user);
-                console.log("🔑 Token:", localStorage.getItem("token")?.substring(0, 20) + "...");
-              }}
-              className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200"
-            >
-              Console Log
-            </button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

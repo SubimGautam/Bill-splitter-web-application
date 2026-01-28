@@ -1,242 +1,118 @@
-"use client";
+import Link from "next/link";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { FcGoogle } from 'react-icons/fc';
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { registerUser } from '@/api/auths';
-
-export default function SignupPage() {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    setError(""); // Clear error when user starts typing
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    // Basic validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await registerUser(formData);
-      
-      // Store token and user data
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
-      
-      // Redirect to dashboard
-      router.push("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left Side - Large Image */}
-      <div className="hidden lg:flex lg:w-3/5 items-center justify-start">
-        <div className="w-full h-full flex items-center">
-          <Image
-            src="/images/bill.png"
-            alt="Split Bills Illustration"
-            width={900}
-            height={900}
-            className="w-auto h-[90vh] object-contain"
-            priority
-          />
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white">
+      {/* Header */}
+      <header className="w-full flex justify-between items-center px-6 md:px-10 py-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-lg">$</span>
+          </div>
+          <span className="text-xl font-bold text-gray-900">Splito</span>
         </div>
-      </div>
 
-      {/* Right Side - Signup Form */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center">
-        <div className="w-full max-w-md p-8">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">$</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Splito</span>
-          </div>
+        <div className="flex gap-4">
+          <Link 
+            href="/authentication/signup" 
+            className="px-5 py-2 rounded-md text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Sign Up
+          </Link>
+          <Link 
+            href="/authentication/login" 
+            className="px-5 py-2 rounded-md bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors"
+          >
+            Login
+          </Link>
+        </div>
+      </header>
 
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <Link
-              href="/authentication/signup"
-              className="flex-1 py-3 text-center text-emerald-600 font-medium border-b-2 border-emerald-500"
-            >
-              Sign Up
-            </Link>
-            <Link
-              href="/authentication/login"
-              className="flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700"
-            >
-              Log In
-            </Link>
-          </div>
-
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h1>
-          <p className="text-gray-600 text-sm mb-6">Start splitting bills with friends</p>
-
-          {/* Google Button */}
-          <button className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 mb-4">
-            <FcGoogle className="w-4 h-4" />
-            <span className="text-gray-700 font-medium text-sm">Sign up with Google</span>
-          </button>
-
-          {/* Divider */}
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-500 text-xs">or</span>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form className="space-y-4" onSubmit={handleSignup}>
-            {/* Username Field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Choose a username"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
-                required
-                minLength={3}
-              />
-            </div>
-
-            {/* Email Field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
-                required
-              />
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="At least 6 characters"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
-                required
-                minLength={6}
-              />
-            </div>
-
-            {/* Confirm Password Field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
-                required
-                minLength={6}
-              />
-            </div>
-
-            {/* Terms and Conditions */}
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="terms"
-                className="h-3 w-3 mt-1 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-                required
-              />
-              <label htmlFor="terms" className="ml-2 text-xs text-gray-600">
-                I agree to the <Link href="/terms" className="text-emerald-600 hover:text-emerald-700">Terms of Service</Link> and <Link href="/privacy" className="text-emerald-600 hover:text-emerald-700">Privacy Policy</Link>
-              </label>
-            </div>
-
-            {/* Sign Up Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 disabled:bg-emerald-300 text-sm mt-2 flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
-
-          {/* Login Link */}
-          <div className="text-center mt-6 pt-6 border-t border-gray-200">
-            <p className="text-gray-600 text-sm">
-              Already have an account?{' '}
-              <Link 
-                href="/authentication/login" 
-                className="text-emerald-600 font-medium hover:text-emerald-700"
-              >
-                Log in
-              </Link>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-16 md:py-24">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Text */}
+          <div className="space-y-8">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+              Split bills
+              <span className="text-emerald-500 block">with ease</span>
+            </h1>
+            
+            <p className="text-xl text-gray-600 max-w-lg">
+              Split expenses with friends, roommates, and family. 
+              Keep track of who owes what, settle up quickly, and never 
+              have awkward money conversations again.
             </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/authentication/signup"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+              >
+                Get Started Free
+              </Link>
+              <Link
+                href="/authentication/login"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                I already have an account
+              </Link>
+            </div>
+
+            {/* Features */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8">
+              <div className="space-y-2">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                </div>
+                <h3 className="font-medium text-gray-900">Easy Tracking</h3>
+                <p className="text-sm text-gray-600">Track expenses in real-time</p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <span className="text-emerald-600 font-bold">⚡</span>
+                </div>
+                <h3 className="font-medium text-gray-900">Quick Settlements</h3>
+                <p className="text-sm text-gray-600">Settle up with one click</p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <span className="text-emerald-600 font-bold">🔒</span>
+                </div>
+                <h3 className="font-medium text-gray-900">Secure</h3>
+                <p className="text-sm text-gray-600">Your data is always safe</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Image */}
+          <div className="relative">
+            <div className="relative w-full h-[500px] lg:h-[600px]">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-3xl"></div>
+              <div className="absolute inset-8 bg-gradient-to-br from-emerald-100/50 to-white rounded-2xl border border-emerald-100 flex items-center justify-center">
+                <div className="text-center p-8">
+                  <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-white text-3xl font-bold">$</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Split Made Simple</h3>
+                  <p className="text-gray-600">Try Splito today and simplify your group expenses</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-20 py-8 border-t border-gray-200">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-600 text-sm">
+            © {new Date().getFullYear()} Splito. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

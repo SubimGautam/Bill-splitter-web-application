@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { FcGoogle } from 'react-icons/fc';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { FcGoogle } from "react-icons/fc";
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface ApiResponse {
   success: boolean;
@@ -25,44 +25,37 @@ interface ApiResponse {
 export default function SignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
   });
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords don't match");
       setLoading(false);
       return;
     }
 
-    if (!formData.agreeTerms) {
-      setError('You must agree to the terms and conditions');
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.username.trim() || !formData.email.trim() || !formData.password) {
-      setError('Please fill in all required fields');
+    if (!agreeTerms) {
+      setError("You must agree to the terms and conditions");
       setLoading(false);
       return;
     }
@@ -102,11 +95,13 @@ export default function SignupPage() {
       localStorage.setItem("token", data.data.token);
       localStorage.setItem("user", JSON.stringify(data.data.user));
 
-      setSuccess(`Account created! Welcome, ${data.data.user.username}. Redirecting...`);
+      console.log("Signup successful! Token stored.");
+      console.log("User:", data.data.user);
 
+      // Redirect to dashboard
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+        window.location.href = "/dashboard";
+      }, 1000);
 
     } catch (err: any) {
       console.error("Signup error:", err);
@@ -116,174 +111,260 @@ export default function SignupPage() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    setError("Google signup is not implemented yet");
-  };
-
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left Side - Image (desktop only) */}
-      <div className="hidden lg:flex lg:w-3/5 items-center justify-start">
-        <div className="w-full h-full flex items-center">
+    <div style={{ minHeight: "100vh", backgroundColor: "#fff" }}>
+      {/* HEADER */}
+      <header style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "1.5rem 2.5rem"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{
+            width: "2.25rem",
+            height: "2.25rem",
+            backgroundColor: "#10b981",
+            borderRadius: "0.375rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <span style={{ color: "white", fontWeight: "bold", fontSize: "1.125rem" }}>$</span>
+          </div>
+          <span style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#111827" }}>Splito</span>
+        </div>
+
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <Link 
+            href="/authentication/signup" 
+            style={{
+              padding: "0.5rem 1.25rem",
+              backgroundColor: "#10b981",
+              color: "white",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "0.375rem",
+              textDecoration: "none"
+            }}
+          >
+            Sign Up
+          </Link>
+          <Link 
+            href="/authentication/login" 
+            style={{
+              padding: "0.5rem 1.25rem",
+              backgroundColor: "#10b981",
+              color: "white",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              borderRadius: "0.375rem",
+              textDecoration: "none"
+            }}
+          >
+            Login
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div style={{ 
+        display: "flex", 
+        minHeight: "100vh", 
+        paddingTop: "5rem",
+        flexDirection: "column"
+      }} className="main-container">
+        
+        {/* Left Image - Hidden on mobile */}
+        <div style={{
+          display: "none",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f9fafb"
+        }} className="desktop-left-image">
           <Image
             src="/images/bill.png"
             alt="Split Bills Illustration"
-            width={900}
-            height={900}
-            className="w-auto h-[90vh] object-contain"
+            width={600}
+            height={600}
+            style={{ maxWidth: "80%", height: "auto", objectFit: "contain" }}
             priority
           />
         </div>
-      </div>
 
-      {/* Right Side - Form */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center">
-        <div className="w-full max-w-md p-8">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">$</span>
+        {/* Right Form Section */}
+        <div style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "2rem 1rem"
+        }} className="desktop-right-form">
+          <div style={{ width: "100%", maxWidth: "28rem" }}>
+            <div style={{ marginBottom: "2rem" }}>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827", marginBottom: "0.5rem" }}>
+                Create account
+              </h1>
+              <p style={{ color: "#4b5563", fontSize: "0.875rem" }}>Start splitting expenses today</p>
             </div>
-            <span className="text-xl font-bold text-gray-900">Splito</span>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <Link
-              href="/authentication/signup"
-              className="flex-1 py-3 text-center text-emerald-600 font-medium border-b-2 border-emerald-500"
-            >
-              Sign Up
-            </Link>
-            <Link
-              href="/authentication/login"
-              className="flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700"
-            >
-              Log In
-            </Link>
-          </div>
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                padding: "0.75rem",
+                borderRadius: "0.5rem",
+                marginBottom: "1rem",
+                fontSize: "0.875rem",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                color: "#b91c1c"
+              }}>
+                {error}
+              </div>
+            )}
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
-          <p className="text-gray-600 text-sm mb-6">Start splitting expenses today</p>
+            {/* Google Sign Up */}
+            <button style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: "0.75rem",
+              border: "1px solid #d1d5db",
+              borderRadius: "0.5rem",
+              backgroundColor: "white",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              marginBottom: "1.5rem"
+            }}>
+              <FcGoogle style={{ width: "1.25rem", height: "1.25rem" }} />
+              <span>Sign up with Google</span>
+            </button>
 
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-              <div className="font-medium">Success!</div>
-              <div>{success}</div>
+            {/* Divider */}
+            <div style={{ display: "flex", alignItems: "center", margin: "1.5rem 0" }}>
+              <div style={{ flex: 1, borderTop: "1px solid #d1d5db" }}></div>
+              <span style={{ padding: "0 1rem", color: "#6b7280", fontSize: "0.875rem" }}>OR</span>
+              <div style={{ flex: 1, borderTop: "1px solid #d1d5db" }}></div>
             </div>
-          )}
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-              <div className="font-medium">Error</div>
-              <div>{error}</div>
-            </div>
-          )}
-
-          <button
-            onClick={handleGoogleSignUp}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 mb-4"
-          >
-            <FcGoogle className="w-4 h-4" />
-            <span className="text-gray-700 font-medium text-sm">Sign up with Google</span>
-          </button>
-
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-500 text-xs">or</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Username</label>
+            {/* Signup Form */}
+            <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <input
                 type="text"
                 name="username"
+                placeholder="Username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder="Choose username"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem"
+                }}
                 required
+                minLength={3}
               />
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email address</label>
               <input
                 type="email"
                 name="email"
+                placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="you@example.com"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem"
+                }}
                 required
               />
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
               <input
                 type="password"
                 name="password"
+                placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Create password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem"
+                }}
                 required
+                minLength={6}
               />
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Confirm Password</label>
               <input
                 type="password"
                 name="confirmPassword"
+                placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-black"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem"
+                }}
                 required
+                minLength={6}
               />
-            </div>
 
-            <div className="flex items-start pt-1">
-              <input
-                type="checkbox"
-                name="agreeTerms"
-                checked={formData.agreeTerms}
-                onChange={handleChange}
-                className="h-3 w-3 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 mt-0.5"
-                required
-              />
-              <label className="ml-2 text-xs text-gray-600 leading-tight">
-                I agree to Terms & Privacy Policy
-              </label>
-            </div>
+              {/* Terms Checkbox */}
+              <div style={{ display: "flex", alignItems: "flex-start", marginTop: "0.5rem" }}>
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  style={{ width: "1rem", height: "1rem", marginTop: "0.125rem" }}
+                  required
+                />
+                <label htmlFor="terms" style={{ marginLeft: "0.75rem", fontSize: "0.875rem", color: "#4b5563" }}>
+                  I agree to Terms & Privacy Policy
+                </label>
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 disabled:bg-emerald-400 text-sm mt-2 flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  backgroundColor: loading ? "#9ca3af" : "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontSize: "1rem",
+                  fontWeight: 500,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  marginTop: "0.5rem"
+                }}
+              >
+                {loading ? "Creating account..." : "Create Account"}
+              </button>
+            </form>
 
-          <div className="text-center mt-6 pt-6 border-t border-gray-200">
-            <p className="text-gray-600 text-sm">
-              Already have an account?{' '}
-              <Link href="/authentication/login" className="text-emerald-600 font-medium hover:text-emerald-700">
+            {/* Login Link */}
+            <p style={{ textAlign: "center", fontSize: "0.875rem", color: "#4b5563", marginTop: "2rem" }}>
+              Already have an account?{" "}
+              <Link href="/authentication/login" style={{
+                color: "#059669",
+                fontWeight: 500,
+                textDecoration: "none"
+              }}>
                 Log in
               </Link>
             </p>
