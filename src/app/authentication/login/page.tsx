@@ -31,81 +31,41 @@ export default function LoginPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(false); // Start as false
 
   // SIMPLIFIED: Only check auth when component mounts
-  useEffect(() => {
-    console.log("Login page mounted - checking if already logged in");
-    
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-    
-    console.log("Token exists:", !!token);
-    console.log("User exists:", !!userStr);
-    
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        console.log("Already logged in as:", user.email);
-        console.log("Redirecting to dashboard...");
-        
-        // Redirect immediately if already logged in
-        setTimeout(() => {
-          router.replace("/dashboard");
-        }, 100);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-    
-    // Don't set isCheckingAuth at all - just skip the loading state
-  }, []);
+
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
+  e.preventDefault();
 
-    try {
-      console.log("Attempting login with:", formData.email);
-      
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  setLoading(true);
+  setError("");
+  setSuccess("");
 
-      const data: ApiResponse = await res.json();
-      
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Login failed");
-      }
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
 
-      if (!data.data?.token || !data.data?.user) {
-        throw new Error("Invalid response from server");
-      }
+    const data: ApiResponse = await res.json();
 
-      // Store in localStorage
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-
-      console.log("Login successful! Token stored.");
-      console.log("User:", data.data.user);
-
-      setSuccess("Logged in! Redirecting to dashboard...");
-
-      // Redirect to dashboard after showing success message
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1500);
-
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Invalid email or password");
-    } finally {
-      setLoading(false);
+    if (!res.ok || !data.success || !data.data) {
+      throw new Error(data.message || "Login failed");
     }
-  };
+
+    localStorage.setItem("token", data.data.token);
+    localStorage.setItem("user", JSON.stringify(data.data.user));
+
+    // 🔥 IMPORTANT: redirect immediately
+    router.push("/dashboard");
+
+  } catch (err: any) {
+    setError(err.message || "Invalid email or password");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // REMOVED the loading check - just show the form immediately
   // The useEffect will handle redirect if already logged in
