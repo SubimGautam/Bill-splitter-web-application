@@ -6,14 +6,13 @@ import {
   FaReceipt, 
   FaMoneyBillWave, 
   FaChartPie,
-  FaBell,
-  FaSearch,
-  FaPlus,
-  FaCalendarAlt,
-  FaCog,
   FaSignOutAlt,
-  FaUserCircle
+  FaUserCircle,
+  FaUser,
+  FaPlus
 } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface User {
   id: string;
@@ -47,6 +46,7 @@ interface Balance {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeGroup, setActiveGroup] = useState('Roommates');
@@ -72,290 +72,53 @@ export default function DashboardPage() {
     { person: 'Jordan', amount: 15.00, type: 'settled', avatar: 'J' },
   ];
 
-  // Authentication logic
+  // Authentication check - FIXED
   useEffect(() => {
-    console.log("[Dashboard] Starting auth check...");
-    
     const checkAuth = () => {
-      const token = localStorage.getItem("token");
+      // Check both localStorage AND cookie
       const userStr = localStorage.getItem("user");
-      
-      console.log("Token:", token ? "yes" : "MISSING");
-      console.log("User:", userStr ? "yes" : "MISSING");
-      
-      if (!token || !userStr) {
-        console.log("[Dashboard] No auth data → going to login");
-        window.location.href = "/authentication/login";
+      const hasToken = document.cookie.includes('token=');
+
+      if (!userStr || !hasToken) {
+        console.log("No auth found, redirecting to login");
+        // Clear any stale data
+        localStorage.removeItem("user");
+        document.cookie = 'token=; path=/; max-age=0';
+        router.push("/authentication/login");
         return;
       }
-      
+
       try {
-        const parsed = JSON.parse(userStr);
-        console.log("[Dashboard] Parsed user:", parsed.email, parsed.username);
-        setUser(parsed);
+        const userData = JSON.parse(userStr);
+        setUser(userData);
         setLoading(false);
-      } catch (e) {
-        console.error("[Dashboard] Parse error:", e);
-        localStorage.clear();
-        window.location.href = "/authentication/login";
+      } catch (error) {
+        console.log("Error parsing user data, redirecting to login");
+        localStorage.removeItem("user");
+        document.cookie = 'token=; path=/; max-age=0';
+        router.push("/authentication/login");
       }
     };
-    
-    // Check auth with a delay
-    setTimeout(checkAuth, 100);
-  }, []);
+
+    // Add a small delay to ensure localStorage is updated
+    const timer = setTimeout(checkAuth, 100);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   const handleLogout = () => {
-    console.log("[DASHBOARD] Logout clicked");
-    localStorage.clear();
-    window.location.href = "/authentication/login";
-  };
-
-  const refreshData = () => {
-    console.log("🔄 Refreshing dashboard data...");
-    alert("Dashboard refreshed!");
-  };
-
-  const checkLocalStorage = () => {
-    const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
+    // Clear all auth data
+    document.cookie = 'token=; path=/; max-age=0';
+    localStorage.removeItem("user");
+    localStorage.removeItem("profileImage");
     
-    console.log("📦 LocalStorage check:");
-    console.log("  Token:", token ? token.substring(0, 20) + "..." : "None");
-    console.log("  User:", user ? user.substring(0, 100) + "..." : "None");
+    // Redirect to login
+    router.push("/authentication/login");
     
-    alert(`Token: ${token ? "Present" : "Missing"}\nUser: ${user ? "Present" : "Missing"}`);
+    // Force a refresh to clear state
+    setTimeout(() => {
+      router.refresh();
+    }, 50);
   };
-
-  // Inline styles
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: "#f9fafb",
-    },
-    nav: {
-      backgroundColor: "#fff",
-      borderBottom: "1px solid #e5e7eb",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-    },
-    navInner: {
-      padding: "1rem 1.5rem",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      maxWidth: "1280px",
-      margin: "0 auto",
-    },
-    logoContainer: {
-      display: "flex",
-      alignItems: "center",
-      gap: "0.75rem",
-    },
-    logoIcon: {
-      width: "2rem",
-      height: "2rem",
-      backgroundColor: "#10b981",
-      borderRadius: "0.5rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    logoText: {
-      fontSize: "1.25rem",
-      fontWeight: "bold",
-      color: "#111827",
-    },
-    navLinks: {
-      display: "none",
-      gap: "1.5rem",
-    },
-    navLink: {
-      color: "#4b5563",
-      fontSize: "0.875rem",
-      fontWeight: 500,
-      textDecoration: "none",
-    },
-    navLinkActive: {
-      color: "#10b981",
-      borderBottom: "2px solid #10b981",
-      paddingBottom: "0.25rem",
-    },
-    iconButton: {
-      padding: "0.5rem",
-      backgroundColor: "transparent",
-      border: "none",
-      borderRadius: "0.5rem",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    userAvatar: {
-      width: "2rem",
-      height: "2rem",
-      backgroundColor: "#d1fae5",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: "pointer",
-    },
-    mainContent: {
-      padding: "2rem 1rem",
-      maxWidth: "1280px",
-      margin: "0 auto",
-    },
-    welcomeHeader: {
-      marginBottom: "2rem",
-    },
-    welcomeTitle: {
-      fontSize: "1.875rem",
-      fontWeight: "bold",
-      color: "#111827",
-      marginBottom: "0.5rem",
-    },
-    welcomeSubtitle: {
-      color: "#4b5563",
-    },
-    statsGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(1, 1fr)",
-      gap: "1.5rem",
-      marginBottom: "2rem",
-    },
-    statCard: {
-      backgroundColor: "#fff",
-      borderRadius: "0.75rem",
-      padding: "1.5rem",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-    },
-    cardTitle: {
-      fontSize: "0.875rem",
-      color: "#6b7280",
-      marginBottom: "0.5rem",
-    },
-    cardValue: {
-      fontSize: "1.5rem",
-      fontWeight: "bold",
-      color: "#111827",
-      marginBottom: "0.25rem",
-    },
-    cardSubtitle: {
-      fontSize: "0.75rem",
-      color: "#10b981",
-    },
-    iconContainer: {
-      width: "3rem",
-      height: "3rem",
-      borderRadius: "0.5rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    contentGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(1, 1fr)",
-      gap: "2rem",
-    },
-    sectionCard: {
-      backgroundColor: "#fff",
-      borderRadius: "0.75rem",
-      padding: "1.5rem",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-    },
-    sectionHeader: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "1.5rem",
-    },
-    sectionTitle: {
-      fontSize: "1.25rem",
-      fontWeight: "bold",
-      color: "#111827",
-    },
-    primaryButton: {
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.5rem 1rem",
-      backgroundColor: "#10b981",
-      color: "white",
-      border: "none",
-      borderRadius: "0.5rem",
-      fontSize: "0.875rem",
-      fontWeight: 500,
-      cursor: "pointer",
-    },
-    groupsGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(1, 1fr)",
-      gap: "1rem",
-    },
-    groupCard: {
-      border: "1px solid #e5e7eb",
-      borderRadius: "0.5rem",
-      padding: "1rem",
-      cursor: "pointer",
-    },
-    groupCardActive: {
-      borderColor: "#10b981",
-      backgroundColor: "#f0fdf4",
-    },
-    expenseItem: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingBottom: "1rem",
-      borderBottom: "1px solid #f3f4f6",
-    },
-    balanceItem: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0.5rem 0",
-    },
-    quickActionButton: {
-      width: "100%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0.75rem",
-      border: "1px solid #e5e7eb",
-      borderRadius: "0.5rem",
-      backgroundColor: "transparent",
-      cursor: "pointer",
-    },
-    userInfoCard: {
-      background: "linear-gradient(to right, #f0fdf4, #eff6ff)",
-      border: "1px solid #bbf7d0",
-      borderRadius: "0.75rem",
-      padding: "1.5rem",
-    },
-  };
-
-  // Media queries for responsive design
-  const mediaQueries = `
-    @media (min-width: 768px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
-      .nav-links {
-        display: flex !important;
-      }
-    }
-    @media (min-width: 1024px) {
-      .stats-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
-      }
-      .content-grid {
-        grid-template-columns: 2fr 1fr !important;
-      }
-      .groups-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
-    }
-  `;
 
   if (loading) {
     return (
@@ -383,438 +146,551 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
-    <>
-      <style jsx global>{mediaQueries}</style>
-      <div style={styles.container}>
-        {/* Top Navigation */}
-        <nav style={styles.nav}>
-          <div style={styles.navInner}>
-            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
-              <div style={styles.logoContainer}>
-                <div style={styles.logoIcon}>
-                  <span style={{ color: "white", fontWeight: "bold", fontSize: "1rem" }}>$</span>
+    <div style={{ 
+      minHeight: "100vh", 
+      backgroundColor: "#f9fafb",
+      padding: "1rem"
+    }}>
+      <style jsx global>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        @media (min-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .nav-links {
+            display: flex !important;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr) !important;
+          }
+          .content-grid {
+            grid-template-columns: 2fr 1fr !important;
+          }
+          .groups-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+      `}</style>
+      
+      {/* Navigation */}
+      <div style={{
+        backgroundColor: "white",
+        borderRadius: "0.75rem",
+        padding: "1rem 1.5rem",
+        marginBottom: "2rem",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{
+            width: "2.5rem",
+            height: "2.5rem",
+            backgroundColor: "#10b981",
+            borderRadius: "0.5rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <span style={{ color: "white", fontWeight: "bold", fontSize: "1.25rem" }}>$</span>
+          </div>
+          <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827" }}>Splito</span>
+        </div>
+        
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "0.5rem",
+            padding: "0.5rem 1rem",
+            backgroundColor: "#f3f4f6",
+            borderRadius: "0.5rem"
+          }}>
+            <FaUserCircle style={{ color: "#10b981" }} />
+            <span style={{ fontWeight: 500 }}>{user.username}</span>
+          </div>
+          
+          {/* Profile Link */}
+          <Link 
+            href="/profile"
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              textDecoration: "none",
+              fontSize: "0.875rem",
+              transition: "background-color 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#059669"}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
+          >
+            <FaUser /> Profile
+          </Link>
+          
+          <button 
+            onClick={handleLogout}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#fee2e2",
+              color: "#dc2626",
+              border: "none",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.875rem",
+              transition: "background-color 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#fecaca"}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+          >
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+        {/* Welcome Header */}
+        <div style={{ marginBottom: "2rem" }}>
+          <h1 style={{ 
+            fontSize: "2rem", 
+            fontWeight: "bold", 
+            color: "#111827",
+            marginBottom: "0.5rem"
+          }}>
+            Welcome back, {user.username}! 👋
+          </h1>
+          <p style={{ color: "#6b7280" }}>
+            Here's your expense overview for today
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "1rem",
+          marginBottom: "2rem"
+        }} className="stats-grid">
+          {[
+            { title: "Total Balance", value: "$+63.75", subtitle: "You are owed", icon: FaMoneyBillWave, color: "#10b981" },
+            { title: "Active Groups", value: "4", subtitle: "Across all groups", icon: FaUsers, color: "#3b82f6" },
+            { title: "This Month", value: "$485.25", subtitle: "Total spent", icon: FaChartPie, color: "#8b5cf6" },
+            { title: "Pending", value: "2", subtitle: "Awaiting payment", icon: FaReceipt, color: "#f59e0b" },
+          ].map((stat, index) => (
+            <div key={index} style={{
+              backgroundColor: "white",
+              borderRadius: "0.75rem",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+                    {stat.title}
+                  </p>
+                  <p style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#111827", marginBottom: "0.25rem" }}>
+                    {stat.value}
+                  </p>
+                  <p style={{ fontSize: "0.75rem", color: stat.color }}>
+                    {stat.subtitle}
+                  </p>
                 </div>
-                <span style={styles.logoText}>Splito</span>
+                <div style={{
+                  width: "3rem",
+                  height: "3rem",
+                  backgroundColor: `${stat.color}15`,
+                  borderRadius: "0.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <stat.icon style={{ color: stat.color, fontSize: "1.5rem" }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "2rem"
+        }} className="content-grid">
+          {/* Left Column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {/* Groups Section */}
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "0.75rem",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#111827" }}>Your Groups</h2>
+                <button style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#059669"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
+                >
+                  <FaPlus /> New Group
+                </button>
               </div>
               
-              <div style={{ ...styles.navLinks, display: "none" }} className="nav-links">
-                <a href="/dashboard" style={{ ...styles.navLink, ...styles.navLinkActive }}>
-                  Dashboard
-                </a>
-                <a href="/groups" style={styles.navLink}>
-                  Groups
-                </a>
-                <a href="/expenses" style={styles.navLink}>
-                  Expenses
-                </a>
-                <a href="/activity" style={styles.navLink}>
-                  Activity
-                </a>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <button 
-                onClick={refreshData}
-                style={styles.iconButton}
-                title="Refresh"
-              >
-                <svg style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-              <button style={styles.iconButton}>
-                <FaSearch style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
-              </button>
-              <button style={{ ...styles.iconButton, position: "relative" }}>
-                <FaBell style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
-                <span style={{
-                  position: "absolute",
-                  top: "-0.25rem",
-                  right: "-0.25rem",
-                  width: "0.5rem",
-                  height: "0.5rem",
-                  backgroundColor: "#ef4444",
-                  borderRadius: "50%"
-                }}></span>
-              </button>
-              <div style={{ position: "relative" }}>
-                <div style={styles.userAvatar}>
-                  <span style={{ color: "#10b981", fontWeight: "bold" }}>
-                    {user.username?.charAt(0).toUpperCase() || 'U'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div style={styles.mainContent}>
-          {/* Welcome Header */}
-          <div style={styles.welcomeHeader}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <h1 style={styles.welcomeTitle}>
-                  Welcome back, {user.username}! 👋
-                </h1>
-                <p style={styles.welcomeSubtitle}>Here's your expense overview</p>
-              </div>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button 
-                  onClick={checkLocalStorage}
-                  style={{
-                    padding: "0.375rem 0.75rem",
-                    backgroundColor: "#f3f4f6",
-                    color: "#4b5563",
-                    fontSize: "0.875rem",
-                    borderRadius: "0.5rem",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Debug
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  style={{
-                    padding: "0.375rem 0.75rem",
-                    backgroundColor: "#fee2e2",
-                    color: "#dc2626",
-                    fontSize: "0.875rem",
-                    borderRadius: "0.5rem",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                  }}
-                >
-                  <FaSignOutAlt style={{ width: "0.75rem", height: "0.75rem" }} />
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div style={{ ...styles.statsGrid }} className="stats-grid">
-            <div style={styles.statCard}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={styles.cardTitle}>Total Balance</p>
-                  <p style={styles.cardValue}>$+63.75</p>
-                  <p style={styles.cardSubtitle}>You are owed</p>
-                </div>
-                <div style={{ ...styles.iconContainer, backgroundColor: "#d1fae5" }}>
-                  <FaMoneyBillWave style={{ color: "#10b981", fontSize: "1.5rem" }} />
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.statCard}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={styles.cardTitle}>Active Groups</p>
-                  <p style={styles.cardValue}>4</p>
-                  <p style={{ ...styles.cardSubtitle, color: "#3b82f6" }}>Across all groups</p>
-                </div>
-                <div style={{ ...styles.iconContainer, backgroundColor: "#dbeafe" }}>
-                  <FaUsers style={{ color: "#3b82f6", fontSize: "1.5rem" }} />
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.statCard}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={styles.cardTitle}>This Month</p>
-                  <p style={styles.cardValue}>$485.25</p>
-                  <p style={{ ...styles.cardSubtitle, color: "#8b5cf6" }}>Total spent</p>
-                </div>
-                <div style={{ ...styles.iconContainer, backgroundColor: "#f3e8ff" }}>
-                  <FaChartPie style={{ color: "#8b5cf6", fontSize: "1.5rem" }} />
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.statCard}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={styles.cardTitle}>Pending</p>
-                  <p style={styles.cardValue}>2</p>
-                  <p style={{ ...styles.cardSubtitle, color: "#f59e0b" }}>Awaiting payment</p>
-                </div>
-                <div style={{ ...styles.iconContainer, backgroundColor: "#fef3c7" }}>
-                  <FaReceipt style={{ color: "#f59e0b", fontSize: "1.5rem" }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ ...styles.contentGrid }} className="content-grid">
-            {/* Left Column - Groups & Recent Expenses */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-              {/* Groups Section */}
-              <div style={styles.sectionCard}>
-                <div style={styles.sectionHeader}>
-                  <h2 style={styles.sectionTitle}>Your Groups</h2>
-                  <button style={styles.primaryButton}>
-                    <FaPlus style={{ width: "0.75rem", height: "0.75rem" }} />
-                    New Group
-                  </button>
-                </div>
-                
-                <div style={{ ...styles.groupsGrid }} className="groups-grid">
-                  {groups.map((group) => (
-                    <div 
-                      key={group.id}
-                      style={{
-                        ...styles.groupCard,
-                        ...(activeGroup === group.name ? styles.groupCardActive : {}),
-                        borderColor: activeGroup === group.name ? "#10b981" : "#e5e7eb",
-                        backgroundColor: activeGroup === group.name ? "#f0fdf4" : "white",
-                      }}
-                      onClick={() => setActiveGroup(group.name)}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <div style={{
-                            width: "2.5rem",
-                            height: "2.5rem",
-                            backgroundColor: group.color,
-                            borderRadius: "0.5rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                          }}>
-                            <FaUsers style={{ color: "white" }} />
-                          </div>
-                          <div>
-                            <h3 style={{ fontWeight: 500, color: "#111827" }}>{group.name}</h3>
-                            <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>{group.members} members</p>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#111827" }}>${group.total.toLocaleString()}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
-                        <span style={{ color: "#6b7280" }}>Last activity: Today</span>
-                        <span style={{ color: "#10b981", fontWeight: 500 }}>View →</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Expenses */}
-              <div style={styles.sectionCard}>
-                <div style={styles.sectionHeader}>
-                  <h2 style={styles.sectionTitle}>Recent Expenses</h2>
-                  <button style={{ ...styles.navLink, border: "none", backgroundColor: "transparent", cursor: "pointer" }}>
-                    View all →
-                  </button>
-                </div>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {recentExpenses.map((expense) => (
-                    <div key={expense.id} style={styles.expenseItem}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr",
+                gap: "1rem"
+              }} className="groups-grid">
+                {groups.map((group) => (
+                  <div 
+                    key={group.id}
+                    style={{
+                      border: activeGroup === group.name ? `2px solid ${group.color}` : "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      padding: "1rem",
+                      cursor: "pointer",
+                      backgroundColor: activeGroup === group.name ? `${group.color}10` : "white",
+                      transition: "all 0.2s"
+                    }}
+                    onClick={() => setActiveGroup(group.name)}
+                    onMouseOver={(e) => {
+                      if (activeGroup !== group.name) {
+                        e.currentTarget.style.backgroundColor = "#f9fafb";
+                        e.currentTarget.style.borderColor = `${group.color}80`;
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (activeGroup !== group.name) {
+                        e.currentTarget.style.backgroundColor = "white";
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                      }
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <div style={{
                           width: "2.5rem",
                           height: "2.5rem",
-                          backgroundColor: "#f3f4f6",
+                          backgroundColor: group.color,
                           borderRadius: "0.5rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center"
                         }}>
-                          <FaReceipt style={{ color: "#6b7280" }} />
+                          <FaUsers style={{ color: "white" }} />
                         </div>
                         <div>
-                          <h4 style={{ fontWeight: 500, color: "#111827" }}>{expense.description}</h4>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                            <span style={{ padding: "0.125rem 0.5rem", backgroundColor: "#f3f4f6", borderRadius: "0.25rem" }}>{expense.group}</span>
-                            <span>•</span>
-                            <span style={expense.person === 'You' ? { color: "#10b981", fontWeight: 500 } : {}}>
-                              {expense.person}
-                            </span>
-                            <span>•</span>
-                            <span>{expense.date}</span>
-                          </div>
+                          <h3 style={{ fontWeight: 600, color: "#111827" }}>{group.name}</h3>
+                          <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>{group.members} members</p>
                         </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <p style={{ fontWeight: "bold", color: "#111827" }}>${expense.amount.toFixed(2)}</p>
-                        <p style={{ fontSize: "0.875rem", color: expense.person === 'You' ? "#10b981" : "#6b7280" }}>
-                          {expense.person === 'You' ? 'You paid' : 'You owe'}
-                        </p>
-                      </div>
+                      <span style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#111827" }}>
+                        ${group.total.toLocaleString()}
+                      </span>
                     </div>
-                  ))}
-                </div>
-
-                <button style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  border: "1px dashed #d1d5db",
-                  borderRadius: "0.5rem",
-                  backgroundColor: "transparent",
-                  color: "#6b7280",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  marginTop: "1.5rem",
-                  cursor: "pointer",
-                }}>
-                  <FaPlus />
-                  Add new expense
-                </button>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
+                      <span style={{ color: "#6b7280" }}>Last activity: Today</span>
+                      <span style={{ color: "#10b981", fontWeight: 500 }}>View →</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Right Column */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-              {/* Balances */}
-              <div style={styles.sectionCard}>
-                <h2 style={styles.sectionTitle}>Balances</h2>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
-                  {balances.map((balance, index) => (
-                    <div key={index} style={styles.balanceItem}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <div style={{
-                          width: "2.5rem",
-                          height: "2.5rem",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: balance.type === 'owes you' ? "#d1fae5" : balance.type === 'you owe' ? "#fee2e2" : "#f3f4f6",
-                        }}>
-                          <span style={{
-                            fontWeight: "bold",
-                            color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#6b7280",
-                          }}>
-                            {balance.avatar}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 style={{ fontWeight: 500, color: "#111827" }}>{balance.person}</h4>
-                          <p style={{
-                            fontSize: "0.875rem",
-                            color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#6b7280",
-                          }}>
-                            {balance.type === 'settled' ? 'All settled up' : balance.type}
-                          </p>
-                        </div>
-                      </div>
-                      <div style={{
-                        fontSize: "1.125rem",
-                        fontWeight: "bold",
-                        color: balance.type === 'owes you' ? "#10b981" : balance.type === 'you owe' ? "#dc2626" : "#111827",
-                      }}>
-                        {balance.type === 'owes you' ? '+' : balance.type === 'you owe' ? '-' : ''}${balance.amount.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  backgroundColor: "#10b981",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  fontWeight: 500,
+            {/* Recent Expenses */}
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "0.75rem",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#111827" }}>Recent Expenses</h2>
+                <button style={{ 
+                  color: "#10b981", 
+                  background: "none", 
+                  border: "none", 
                   cursor: "pointer",
-                }}>
-                  Settle Up
+                  fontWeight: 500,
+                  transition: "color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.color = "#059669"}
+                onMouseOut={(e) => e.currentTarget.style.color = "#10b981"}
+                >
+                  View all →
                 </button>
               </div>
-
-              {/* Quick Actions */}
-              <div style={styles.sectionCard}>
-                <h2 style={styles.sectionTitle}>Quick Actions</h2>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  <button style={styles.quickActionButton}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#d1fae5", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <FaPlus style={{ color: "#10b981" }} />
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {recentExpenses.map((expense) => (
+                  <div 
+                    key={expense.id} 
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "1rem",
+                      border: "1px solid #f3f4f6",
+                      borderRadius: "0.5rem",
+                      backgroundColor: "#f9fafb",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#e5e7eb";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f9fafb";
+                      e.currentTarget.style.borderColor = "#f3f4f6";
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{
+                        width: "2.5rem",
+                        height: "2.5rem",
+                        backgroundColor: "#f3f4f6",
+                        borderRadius: "0.5rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}>
+                        <FaReceipt style={{ color: "#6b7280" }} />
                       </div>
-                      <span>Add expense</span>
-                    </div>
-                    <span style={{ color: "#9ca3af" }}>→</span>
-                  </button>
-
-                  <button style={styles.quickActionButton}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#dbeafe", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <FaUsers style={{ color: "#3b82f6" }} />
+                      <div>
+                        <h4 style={{ fontWeight: 500, color: "#111827" }}>{expense.description}</h4>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                          <span style={{ 
+                            padding: "0.125rem 0.5rem", 
+                            backgroundColor: "#f3f4f6", 
+                            borderRadius: "0.25rem" 
+                          }}>
+                            {expense.group}
+                          </span>
+                          <span>•</span>
+                          <span style={expense.person === 'You' ? { color: "#10b981", fontWeight: 500 } : {}}>
+                            {expense.person}
+                          </span>
+                          <span>•</span>
+                          <span>{expense.date}</span>
+                        </div>
                       </div>
-                      <span>Create group</span>
                     </div>
-                    <span style={{ color: "#9ca3af" }}>→</span>
-                  </button>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontWeight: "bold", color: "#111827" }}>${expense.amount.toFixed(2)}</p>
+                      <p style={{ 
+                        fontSize: "0.875rem", 
+                        color: expense.person === 'You' ? "#10b981" : "#6b7280" 
+                      }}>
+                        {expense.person === 'You' ? 'You paid' : 'You owe'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <button style={{
+                width: "100%",
+                padding: "0.75rem",
+                border: "1px dashed #d1d5db",
+                borderRadius: "0.5rem",
+                backgroundColor: "transparent",
+                color: "#6b7280",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                marginTop: "1.5rem",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "#f9fafb";
+                e.currentTarget.style.borderColor = "#10b981";
+                e.currentTarget.style.color = "#10b981";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.borderColor = "#d1d5db";
+                e.currentTarget.style.color = "#6b7280";
+              }}
+              >
+                <FaPlus /> Add new expense
+              </button>
+            </div>
+          </div>
 
-                  <button style={styles.quickActionButton}>
+          {/* Right Column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {/* Balances */}
+            <div style={{
+              backgroundColor: "white",
+              borderRadius: "0.75rem",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#111827", marginBottom: "1.5rem" }}>
+                Balances
+              </h2>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+                {balances.map((balance, index) => (
+                  <div 
+                    key={index} 
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      padding: "1rem",
+                      borderRadius: "0.5rem",
+                      backgroundColor: "#f9fafb",
+                      transition: "background-color 0.2s"
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f3f4f6"}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#f3e8ff", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <FaCalendarAlt style={{ color: "#8b5cf6" }} />
+                      <div style={{
+                        width: "2.5rem",
+                        height: "2.5rem",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: balance.type === 'owes you' ? "#d1fae5" : 
+                                       balance.type === 'you owe' ? "#fee2e2" : "#f3f4f6",
+                      }}>
+                        <span style={{
+                          fontWeight: "bold",
+                          color: balance.type === 'owes you' ? "#10b981" : 
+                                 balance.type === 'you owe' ? "#dc2626" : "#6b7280",
+                        }}>
+                          {balance.avatar}
+                        </span>
                       </div>
-                      <span>View report</span>
+                      <div>
+                        <h4 style={{ fontWeight: 500, color: "#111827" }}>{balance.person}</h4>
+                        <p style={{
+                          fontSize: "0.875rem",
+                          color: balance.type === 'owes you' ? "#10b981" : 
+                                 balance.type === 'you owe' ? "#dc2626" : "#6b7280",
+                        }}>
+                          {balance.type === 'settled' ? 'All settled up' : balance.type}
+                        </p>
+                      </div>
                     </div>
-                    <span style={{ color: "#9ca3af" }}>→</span>
-                  </button>
+                    <div style={{
+                      fontSize: "1.125rem",
+                      fontWeight: "bold",
+                      color: balance.type === 'owes you' ? "#10b981" : 
+                             balance.type === 'you owe' ? "#dc2626" : "#111827",
+                    }}>
+                      {balance.type === 'owes you' ? '+' : balance.type === 'you owe' ? '-' : ''}
+                      ${balance.amount.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <button style={{
+                width: "100%",
+                padding: "0.75rem",
+                backgroundColor: "#10b981",
+                color: "white",
+                border: "none",
+                borderRadius: "0.5rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "background-color 0.2s"
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#059669"}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
+              >
+                Settle Up
+              </button>
+            </div>
 
-                  <button style={styles.quickActionButton}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <div style={{ width: "2rem", height: "2rem", backgroundColor: "#f3f4f6", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <FaCog style={{ color: "#6b7280" }} />
-                      </div>
-                      <span>Settings</span>
-                    </div>
-                    <span style={{ color: "#9ca3af" }}>→</span>
-                  </button>
+            {/* User Info Card */}
+            <div style={{
+              background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+              border: "1px solid #bbf7d0",
+              borderRadius: "0.75rem",
+              padding: "1.5rem"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                <div style={{ 
+                  width: "3rem", 
+                  height: "3rem", 
+                  backgroundColor: "white", 
+                  borderRadius: "50%", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+                }}>
+                  <FaUserCircle style={{ color: "#10b981", fontSize: "2rem" }} />
+                </div>
+                <div>
+                  <h3 style={{ fontWeight: "bold", color: "#111827" }}>{user.username}</h3>
+                  <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>{user.email}</p>
                 </div>
               </div>
-
-              {/* User Info Card */}
-              <div style={styles.userInfoCard}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                  <div style={{ width: "3rem", height: "3rem", backgroundColor: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)" }}>
-                    <FaUserCircle style={{ color: "#10b981", fontSize: "2rem" }} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontWeight: "bold", color: "#111827" }}>{user.username}</h3>
-                    <p style={{ fontSize: "0.875rem", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
-                  </div>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#6b7280" }}>Status</span>
+                  <span style={{ 
+                    padding: "0.125rem 0.5rem", 
+                    backgroundColor: "#d1fae5", 
+                    color: "#047857", 
+                    borderRadius: "9999px", 
+                    fontSize: "0.75rem", 
+                    fontWeight: 500 
+                  }}>
+                    Active
+                  </span>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem", marginBottom: "1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#6b7280" }}>Status</span>
-                    <span style={{ padding: "0.125rem 0.5rem", backgroundColor: "#d1fae5", color: "#047857", borderRadius: "9999px", fontSize: "0.75rem", fontWeight: 500 }}>
-                      Active
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#6b7280" }}>Role</span>
-                    <span style={{ fontWeight: 500 }}>{user.role}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#6b7280" }}>Member since</span>
-                    <span style={{ fontWeight: 500 }}>Today</span>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#6b7280" }}>Role</span>
+                  <span style={{ fontWeight: 500 }}>{user.role}</span>
                 </div>
-                <button 
-                  onClick={handleLogout}
+              </div>
+              
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <Link 
+                  href="/profile"
                   style={{
-                    width: "100%",
+                    flex: 1,
                     padding: "0.5rem",
                     border: "1px solid #10b981",
                     color: "#10b981",
@@ -825,42 +701,57 @@ export default function DashboardPage() {
                     justifyContent: "center",
                     gap: "0.5rem",
                     cursor: "pointer",
+                    textDecoration: "none",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    transition: "all 0.2s"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = "#10b981";
+                    e.currentTarget.style.color = "white";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = "#10b981";
                   }}
                 >
-                  <FaSignOutAlt style={{ width: "0.75rem", height: "0.75rem" }} />
-                  Sign Out
+                  <FaUser /> Edit Profile
+                </Link>
+                
+                <button 
+                  onClick={handleLogout}
+                  style={{
+                    flex: 1,
+                    padding: "0.5rem",
+                    border: "1px solid #fee2e2",
+                    color: "#dc2626",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "#fee2e2",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    cursor: "pointer",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    transition: "all 0.2s"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fecaca";
+                    e.currentTarget.style.borderColor = "#fecaca";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fee2e2";
+                    e.currentTarget.style.borderColor = "#fee2e2";
+                  }}
+                >
+                  <FaSignOutAlt /> Sign Out
                 </button>
               </div>
             </div>
           </div>
-
-          {/* Debug Footer */}
-          <div style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid #e5e7eb" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                Logged in as: <span style={{ fontWeight: 500, color: "#374151" }}>{user.email}</span>
-              </div>
-              <button
-                onClick={() => {
-                  console.log("🔍 Current user:", user);
-                  console.log("🔑 Token:", localStorage.getItem("token")?.substring(0, 20) + "...");
-                }}
-                style={{
-                  padding: "0.375rem 0.75rem",
-                  backgroundColor: "#f3f4f6",
-                  color: "#4b5563",
-                  fontSize: "0.875rem",
-                  borderRadius: "0.5rem",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Console Log
-              </button>
-            </div>
-          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

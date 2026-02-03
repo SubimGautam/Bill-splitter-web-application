@@ -27,52 +27,112 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false); // Start as false
+  const [mounted, setMounted] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // SIMPLIFIED: Only check auth when component mounts
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = localStorage.getItem("user");
+      const token = document.cookie.includes('token=');
+      
+      if (user && token) {
+        console.log("User already logged in, redirecting to dashboard");
+        router.push("/dashboard");
+      } else {
+        // Clear any stale data
+        localStorage.removeItem("user");
+        document.cookie = 'token=; path=/; max-age=0';
+      }
+      setIsCheckingAuth(false);
+      setMounted(true);
+    };
 
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-  setLoading(true);
-  setError("");
-  setSuccess("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+        credentials: "include" // Important for cookies
+      });
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+      const data: ApiResponse = await res.json();
 
-    const data: ApiResponse = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Login failed");
+      }
 
-    if (!res.ok || !data.success || !data.data) {
-      throw new Error(data.message || "Login failed");
+      if (data.data) {
+        // Store authentication data
+        // Set cookie with secure options
+        document.cookie = `token=${data.data.token}; path=/; max-age=86400; samesite=strict`;
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+        
+        console.log("Login successful, redirecting to dashboard");
+        
+        // Clear form
+        setFormData({ email: "", password: "" });
+        
+        // Redirect to dashboard
+        router.push("/dashboard");
+        
+        // Refresh to ensure proper state update
+        setTimeout(() => {
+          router.refresh();
+        }, 100);
+      } else {
+        throw new Error("No user data received");
+      }
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password");
+      console.error("Login error:", err);
+      
+      // Clear any partial auth data on error
+      localStorage.removeItem("user");
+      document.cookie = 'token=; path=/; max-age=0';
+    } finally {
+      setLoading(false);
     }
+  };
 
-    localStorage.setItem("token", data.data.token);
-    localStorage.setItem("user", JSON.stringify(data.data.user));
-
-    // 🔥 IMPORTANT: redirect immediately
-    router.push("/dashboard");
-
-  } catch (err: any) {
-    setError(err.message || "Invalid email or password");
-  } finally {
-    setLoading(false);
+  // Don't render anything until mounted and auth check is complete
+  if (!mounted || isCheckingAuth) {
+    return (
+      <div style={{ 
+        minHeight: "100vh", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center",
+        backgroundColor: "#fff" 
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "3rem",
+            height: "3rem",
+            border: "4px solid #10b981",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto"
+          }}></div>
+          <p style={{ marginTop: "1rem", color: "#6b7280" }}>Loading...</p>
+        </div>
+      </div>
+    );
   }
-};
-
-
-  // REMOVED the loading check - just show the form immediately
-  // The useEffect will handle redirect if already logged in
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#fff" }}>
-      {/* Add spin animation */}
       <style jsx global>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -207,19 +267,6 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            {success && (
-              <div style={{
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                marginBottom: "1rem",
-                fontSize: "0.875rem",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                color: "#047857"
-              }}>
-                {success}
-              </div>
-            )}
 
             {/* Google Sign In */}
             <button style={{
@@ -237,7 +284,7 @@ export default function LoginPage() {
               marginBottom: "1.5rem"
             }}>
               <FcGoogle style={{ width: "1.25rem", height: "1.25rem" }} />
-              <span>sign in with google</span>
+              <span>Sign in with Google</span>
             </button>
 
             {/* Divider */}
@@ -262,7 +309,7 @@ export default function LoginPage() {
                   fontSize: "0.875rem"
                 }}
                 required
-                disabled={loading || !!success}
+                disabled={loading}
               />
 
               <input
@@ -278,7 +325,7 @@ export default function LoginPage() {
                   fontSize: "0.875rem"
                 }}
                 required
-                disabled={loading || !!success}
+                disabled={loading}
               />
 
               <div style={{ textAlign: "right" }}>
@@ -287,26 +334,39 @@ export default function LoginPage() {
                   color: "#059669",
                   textDecoration: "none"
                 }}>
-                  forgot password?
+                  Forgot password?
                 </Link>
               </div>
 
               <button
                 type="submit"
-                disabled={loading || !!success}
+                disabled={loading}
                 style={{
                   width: "100%",
                   padding: "0.75rem",
-                  backgroundColor: (loading || success) ? "#9ca3af" : "#10b981",
+                  backgroundColor: loading ? "#9ca3af" : "#10b981",
                   color: "white",
                   border: "none",
                   borderRadius: "0.5rem",
                   fontSize: "1rem",
                   fontWeight: 500,
-                  cursor: (loading || success) ? "not-allowed" : "pointer"
+                  cursor: loading ? "not-allowed" : "pointer",
+                  transition: "background-color 0.2s"
                 }}
               >
-                {loading ? "Logging in..." : success ? "Redirecting..." : "Login"}
+                {loading ? (
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                    <div style={{
+                      width: "1rem",
+                      height: "1rem",
+                      border: "2px solid white",
+                      borderTopColor: "transparent",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite"
+                    }}></div>
+                    Logging in...
+                  </span>
+                ) : "Login"}
               </button>
             </form>
 

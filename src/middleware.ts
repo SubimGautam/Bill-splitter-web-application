@@ -1,25 +1,31 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-  
-  // If user is not logged in and trying to access protected routes
-  if (!token && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/authentication/login', request.url));
+  const token = request.cookies.get('token')?.value
+  const { pathname } = request.nextUrl
+
+  // Public routes that don't require authentication
+  const publicPaths = ['/authentication/login', '/authentication/signup', '/']
+  const isPublicPath = publicPaths.includes(pathname)
+
+  // Protect dashboard (and any future protected routes)
+  if (pathname.startsWith('/dashboard') && !token) {
+    const loginUrl = new URL('/authentication/login', request.url)
+    loginUrl.searchParams.set('from', pathname)
+    return NextResponse.redirect(loginUrl)
   }
-  
-  // If user is logged in and trying to access auth pages
-  if (token && (
-    request.nextUrl.pathname.startsWith('/authentication/login') ||
-    request.nextUrl.pathname.startsWith('/authentication/signup')
-  )) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-  
-  return NextResponse.next();
+
+  // IMPORTANT: We NO LONGER redirect logged-in users AWAY from login/signup
+  // This allows users to see the pages even when authenticated (for testing, logout flow, etc.)
+
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/authentication/:path*'],
-};
+  matcher: [
+    '/dashboard/:path*',
+    '/authentication/login',
+    '/authentication/signup',
+  ],
+}
